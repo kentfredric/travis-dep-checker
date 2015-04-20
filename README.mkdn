@@ -1,0 +1,53 @@
+# travis-dep-checker
+
+This repository is a set of rudimentary tools for testing
+**published**  CPAN distributions against other **published** distributions,
+for the purposes of regression testing.
+
+All mechanics is to be directed through the OPTS= parameter,
+the parsing of which is handled in `perl/opt_parse.pl`.
+
+# OPT=
+
+### `perl=<ARG>`
+
+Use a cloned perl ( as specified )
+
+Absence of this value will will use the available travis perl.
+
+### `test_target=AUTHORNAME/Dist-Name-0.123.tar.gz`
+
+This is the target that is being tested **against**
+
+Fully qualified semantics aught to eliminate any special dev/non-dev behaviour.
+
+- All of its dependencies will be installed with --notest
+- The distribution itself will be tested
+- Then `target` will be operated on.
+
+### `test=AUTHORNAME/Another-Dist-Name-0.123.tar.gz`
+
+This is the target that is being tested for regressions.
+
+Again, anything dev or otherwise should just work here.
+
+- All of its dependencies will be installed with --notest
+- Then this distribution will be tested
+
+### `dev(=item(,item(,item)))`
+
+Enables installing `--dev` dependencies for phases in `=item*`
+
+If no `=` is specified, assumes `test,test_target`
+
+- `=test`         enables testing for the `test` phase.
+- `=test_target`  enables testing for the `test_target` phase.
+
+### `no-dev(=item(,item(,item)))`
+
+Disables installing `--dev` dependencies for phases in `=item*`
+
+If no `=` is specified, assumes `test,test_target`
+
+- `=test`         enables testing for the `test` phase.
+- `=test_target`  enables testing for the `test_target` phase.
