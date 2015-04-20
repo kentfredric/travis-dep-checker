@@ -14,6 +14,24 @@ $opts->write_bashconfig('./test_config.sh');
 
     package opt;
 
+    my ( $all_opt_keys, $dev_targets );
+
+    BEGIN {
+        $dev_targets = {
+            "test_target" => 1,
+            "test"        => 1,
+        };
+    }
+
+    BEGIN {
+        $all_opt_keys = {
+            perl        => 1,
+            test_target => 1,
+            test        => 1,
+            ( map { 'dev_' . $_ => 1 } keys %{$dev_targets} ),
+        };
+    }
+
     sub new {
         my ( $self, @args ) = @_;
         return bless { ref $args[0] ? %{ $args[0] } : @args }, $self;
@@ -34,6 +52,18 @@ $opts->write_bashconfig('./test_config.sh');
     sub parsed_opts {
         my ( $self, ) = @_;
         return ( $self->{parsed_opts} ||= {} );
+    }
+
+    sub set_opt {
+        my ( $self, $opt, $value ) = @_;
+        die "No such option $opt" if not exists $all_opt_keys->{$opt};
+        $self->parsed_opts->{$opt} = $value;
+    }
+
+    sub clear_opt {
+        my ( $self, $opt, $value ) = @_;
+        die "No such option $opt" if not exists $all_opt_keys->{$opt};
+        delete $self->parsed_opts->{$opt};
     }
 
     sub process_opts {
@@ -68,7 +98,7 @@ $opts->write_bashconfig('./test_config.sh');
         if ( not defined $opt_arg or not length $opt_arg ) {
             die "option perl requires an argument";
         }
-        $self->parsed_opts->{'perl'} = $opt_arg;
+        $self->set_opt( 'perl', $opt_arg );
     }
 
     # test_target=AUTHORID/Path-To-Dist.tar.gz
@@ -88,7 +118,7 @@ $opts->write_bashconfig('./test_config.sh');
             die q[test_target does not end with a known extension]
               . q[ ( .gz, .bz2, .tgz, .zip, .xz )];
         }
-        $self->parsed_opts->{'test_target'} = $opt_arg;
+        $self->set_opt( 'test_target', $opt_arg );
     }
 
     # test=AUTHORID/Path-To-Dist.tar.gz
@@ -108,16 +138,7 @@ $opts->write_bashconfig('./test_config.sh');
             die q[test_target does not end with a known extension]
               . q[ ( .gz, .bz2, .tgz, .zip, .xz )];
         }
-        $self->parsed_opts->{'test'} = $opt_arg;
-    }
-
-    my ($dev_targets);
-
-    BEGIN {
-        $dev_targets = {
-            "test_target" => 1,
-            "test"        => 1,
-        };
+        $self->set_opt( 'test', $opt_arg );
     }
 
     sub set_dev {
@@ -126,13 +147,13 @@ $opts->write_bashconfig('./test_config.sh');
             die "No such dev target $target: Valid targets are: " . join q(, ),
               keys %{$dev_targets};
         }
-        $self->parsed_opts->{ 'dev_' . $target } = 1;
+        $self->set_opt( 'dev_' . $target, 1 );
     }
 
     sub clear_dev {
         my ( $self, $target ) = @_;
         die "No such dev target $target" unless exists $dev_targets->{$target};
-        delete $self->parsed_opts->{ 'dev_' . $target };
+        $self->clear_opt( 'dev_' . $target );
     }
 
     sub handle_opt_no_dev {
@@ -183,15 +204,20 @@ $opts->write_bashconfig('./test_config.sh');
     sub write_bashconfig {
         my ( $self, $file ) = @_;
         open my $fh, '>:raw:unix', $file or die "Can't open $file for writing";
-        for my $key ( sort keys %{ $self->parsed_opts } ) {
-            my $value      = $self->parsed_opts->{$key};
-            my $safe_value = $value;
+        for my $key ( sort keys %{$all_opt_keys} ) {
+            if ( exists $self->parsed_opts->{$key} ) {
+                my $value      = $self->parsed_opts->{$key};
+                my $safe_value = $value;
 
-            # Replace any instances of ' with '\''
-            # which is the only way I know of to add a literal ' inside a '
-            # because \ inside '' is meaningless.
-            $safe_value =~ s/'/'\\''/g;
-            printf $fh "export %s='%s'\n", $key, $safe_value;
+                # Replace any instances of ' with '\''
+                # which is the only way I know of to add a literal ' inside a '
+                # because \ inside '' is meaningless.
+                $safe_value =~ s/'/'\\''/g;
+                printf $fh "export %s='%s'\n", $key, $safe_value;
+            }
+            else {
+                printf $fh "unset  %s\n", $key;
+            }
         }
         close $fh;
     }
