@@ -101,6 +101,17 @@ $opts->write_bashconfig('./test_config.sh');
         $self->set_opt( 'perl', $opt_arg );
     }
 
+    my $valid_dist_regex = qr{
+      \A
+      ([A-Z0-9]/)?
+      ([A-Z0-9]{2}/)?
+      [A-Z0-9]{2,}/
+      .*
+      \.
+      (gz|bz2|tgz|zip|xz)
+      \z
+    }x;
+
     # test_target=AUTHORID/Path-To-Dist.tar.gz
     #
     # This is the module that things are to be tested *against*
@@ -109,14 +120,10 @@ $opts->write_bashconfig('./test_config.sh');
         if ( not defined $opt_arg or not length $opt_arg ) {
             die "option perl requires an argument";
         }
-        if ( not $opt_arg =~ /\A[A-Z0-9]{2,}\/\w/ ) {
+        if ( not $opt_arg =~ $valid_dist_regex ) {
             die sprintf
-              q[test_target "%s" does not match form AUTHORID/SourceFile.ext],
-              $opt_arg;
-        }
-        if ( not $opt_arg =~ /\.(gz|bz2|tgz|zip|xz)\z/ ) {
-            die q[test_target does not end with a known extension]
-              . q[ ( .gz, .bz2, .tgz, .zip, .xz )];
+              q[test_target "%s" does not match %s],
+              $opt_arg, $valid_dist_regex;
         }
         $self->set_opt( 'test_target', $opt_arg );
     }
@@ -129,14 +136,10 @@ $opts->write_bashconfig('./test_config.sh');
         if ( not defined $opt_arg or not length $opt_arg ) {
             die "option perl requires an argument";
         }
-        if ( not $opt_arg =~ /\A[A-Z0-9]{2,}\/\w/ ) {
+        if ( not $opt_arg =~ $valid_dist_regex ) {
             die sprintf
-              q[test "%s" does not match form AUTHORID/SourceFile.ext],
-              $opt_arg;
-        }
-        if ( not $opt_arg =~ /\.(gz|bz2|tgz|zip|xz)\z/ ) {
-            die q[test_target does not end with a known extension]
-              . q[ ( .gz, .bz2, .tgz, .zip, .xz )];
+              q[test "%s" does not match form "%s"],
+              $opt_arg, $valid_dist_regex;
         }
         $self->set_opt( 'test', $opt_arg );
     }
