@@ -101,7 +101,9 @@ $opts->write_bashconfig('./test_config.sh');
         $self->set_opt( 'perl', $opt_arg );
     }
 
-    my $valid_dist_regex = qr{
+    my $valid_dist_regex ;
+    BEGIN  { 
+      $valid_dist_regex = qr{
       \A
       ([A-Z0-9]/)?
       ([A-Z0-9]{2}/)?
@@ -111,7 +113,7 @@ $opts->write_bashconfig('./test_config.sh');
       (gz|bz2|tgz|zip|xz)
       \z
     }x;
-
+    };
     # test_target=AUTHORID/Path-To-Dist.tar.gz
     #
     # This is the module that things are to be tested *against*
